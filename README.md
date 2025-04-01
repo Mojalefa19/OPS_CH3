@@ -85,19 +85,26 @@
         "type": "string",
         "defaultValue": "10.30.21.0/24"
       },
-      "asgName":{
+      "asgName": {
         "type": "string",
         "defaultValue": "asg-web"
       },
-      "publicDnsZoneName":{
+      "publicDnsZoneName": {
         "type": "string",
         "defaultValue": "contoso.com"
       },
-      "privateDnsZoneName":{
+      "privateDnsZoneName": {
         "type": "string",
         "defaultValue": "private.contoso.com"
+      },
+      "publicDnsRecordIpAddress":{
+        "type": "string",
+        "defaultValue": "10.1.1.4"
+      },
+      "privateDnsRecordIpAddress":{
+        "type": "string",
+        "defaultValue": "10.1.1.4"
       }
-  
     },
     "variables": {},
     "resources": [
@@ -226,32 +233,69 @@
           ]
         }
       },
-          {
-              "type": "Microsoft.Network/dnsZones",
-              "apiVersion": "2018-05-01",
-              "name": "[parameters('publicDnsZoneName')]",
-              "location": "global",
-              "properties": {}
-          },
-          {
-              "type": "Microsoft.Network/privateDnsZones",
-              "apiVersion": "2018-09-01",
-              "name": "[parameters('privateDnsZoneName')]",
-              "location": "global",
-              "properties": {}
-          },
-                  {
-              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-              "apiVersion": "2018-09-01",
-              "name": "[concat(parameters('privateDnsZoneName'), '/manufacturing-link')]",
-              "location": "global",
-              "properties": {
-                  "registrationEnabled": false,
-                  "virtualNetwork": {
-                      "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet2Name'))]"
-                  }
-              }
+      {
+        "type": "Microsoft.Network/dnsZones",
+        "apiVersion": "2018-05-01",
+        "name": "[parameters('publicDnsZoneName')]",
+        "location": "global",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Network/dnsZones/A",
+        "apiVersion": "2018-05-01",
+        "name": "[concat('www.',parameters('publicDnsZoneName'))]",
+        "location": "global",
+        "properties": {
+          "ttl": 3600,
+          "aRecords": [
+            {
+              "ipv4Address": "[parameters('publicDnsRecordIpAddress')]"
+            }
+          ]
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.Network/dnsZones',parameters('publicDnsZoneName'))]"
+        ]
+      },
+      {
+        "type": "Microsoft.Network/privateDnsZones",
+        "apiVersion": "2018-09-01",
+        "name": "[parameters('privateDnsZoneName')]",
+        "location": "global",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+        "apiVersion": "2018-09-01",
+        "name": "[concat(parameters('privateDnsZoneName'), '/manufacturing-link')]",
+        "location": "global",
+        "properties": {
+          "registrationEnabled": false,
+          "virtualNetwork": {
+            "id": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnet2Name'))]"
           }
+        },
+         "dependsOn": [
+          "[resourceId('Microsoft.Network/privateDnsZones',parameters('privateDnsZoneName'))]"
+        ]
+      },
+      {
+        "type": "Microsoft.Network/privateDnsZones/A",
+        "apiVersion": "2018-09-01",
+        "name": "[concat('sensorvm.',parameters('privateDnsZoneName'))]",
+        "location": "global",
+        "properties": {
+          "ttl": 3600,
+          "aRecords": [
+            {
+              "ipv4Address": "[parameters('privateDnsRecordIpAddress')]"
+            }
+          ]
+        },
+         "dependsOn": [
+          "[resourceId('Microsoft.Network/privateDnsZones',parameters('privateDnsZoneName'))]"
+        ]
+      }
     ],
     "outputs": {}
   }
